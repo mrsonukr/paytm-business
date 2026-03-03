@@ -1,66 +1,69 @@
-// src/App.tsx
-
 import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import viteLogo from "/vite.svg";
-import cloudflareLogo from "./assets/Cloudflare_Logo.svg";
-import honoLogo from "./assets/hono.svg";
+import MerchantList from "./components/MerchantList";
+import MerchantForm from "./components/MerchantForm";
 import "./App.css";
 
-function App() {
-	const [count, setCount] = useState(0);
-	const [name, setName] = useState("unknown");
+interface Merchant {
+  id?: number;
+  merchant_name: string;
+  mobile_no: string;
+  upi_id: string;
+  merchant_key: string;
+  status: number;
+  created_at?: string;
+  updated_at?: string;
+}
 
-	return (
-		<>
-			<div>
-				<a href="https://vite.dev" target="_blank">
-					<img src={viteLogo} className="logo" alt="Vite logo" />
-				</a>
-				<a href="https://react.dev" target="_blank">
-					<img src={reactLogo} className="logo react" alt="React logo" />
-				</a>
-				<a href="https://hono.dev/" target="_blank">
-					<img src={honoLogo} className="logo cloudflare" alt="Hono logo" />
-				</a>
-				<a href="https://workers.cloudflare.com/" target="_blank">
-					<img
-						src={cloudflareLogo}
-						className="logo cloudflare"
-						alt="Cloudflare logo"
-					/>
-				</a>
-			</div>
-			<h1>Vite + React + Hono + Cloudflare</h1>
-			<div className="card">
-				<button
-					onClick={() => setCount((count) => count + 1)}
-					aria-label="increment"
-				>
-					count is {count}
-				</button>
-				<p>
-					Edit <code>src/App.tsx</code> and save to test HMR
-				</p>
-			</div>
-			<div className="card">
-				<button
-					onClick={() => {
-						fetch("/api/")
-							.then((res) => res.json() as Promise<{ name: string }>)
-							.then((data) => setName(data.name));
-					}}
-					aria-label="get name"
-				>
-					Name from API is: {name}
-				</button>
-				<p>
-					Edit <code>worker/index.ts</code> to change the name
-				</p>
-			</div>
-			<p className="read-the-docs">Click on the logos to learn more</p>
-		</>
-	);
+type View = 'list' | 'form' | null;
+
+function App() {
+  const [currentView, setCurrentView] = useState<View>('list');
+  const [editingMerchant, setEditingMerchant] = useState<Merchant | null>(null);
+
+  const handleAddMerchant = () => {
+    setEditingMerchant(null);
+    setCurrentView('form');
+  };
+
+  const handleEditMerchant = (merchant: Merchant) => {
+    setEditingMerchant(merchant);
+    setCurrentView('form');
+  };
+
+  const handleSaveMerchant = () => {
+    setEditingMerchant(null);
+    setCurrentView('list');
+  };
+
+  const handleCancelForm = () => {
+    setEditingMerchant(null);
+    setCurrentView('list');
+  };
+
+  return (
+    <div className="app">
+      <header className="app-header">
+        <h1>Paytm Business - Merchant Management</h1>
+      </header>
+      
+      <main className="app-main">
+        {currentView === 'list' && (
+          <MerchantList
+            onEdit={handleEditMerchant}
+            onAdd={handleAddMerchant}
+          />
+        )}
+        
+        {currentView === 'form' && (
+          <MerchantForm
+            merchant={editingMerchant || undefined}
+            onSave={handleSaveMerchant}
+            onCancel={handleCancelForm}
+          />
+        )}
+      </main>
+    </div>
+  );
 }
 
 export default App;
