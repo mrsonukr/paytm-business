@@ -36,8 +36,8 @@ function App() {
   };
 
   const handleSavePayment = (payment: any) => {
-    // Redirect to payment page or show success
-    window.open(`/payment/${payment.order_id}`, '_blank');
+    // Redirect to payment page with the payment ID instead of order ID
+    window.open(`/payment/${payment.payment_id}`, '_blank');
     setPaymentMerchant(null);
     setCurrentView('list');
   };

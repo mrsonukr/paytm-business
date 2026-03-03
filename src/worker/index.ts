@@ -186,8 +186,9 @@ app.post("/api/payment/create", async (c) => {
   }
 
   try {
-    // Generate unique order ID
+    // Generate unique order ID and payment ID
     const order_id = `ORDER_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const payment_id = Math.random().toString(36).substr(2, 20) + Math.random().toString(36).substr(2, 20);
     
     // Get merchant details
     const merchant = await c.env.DB
@@ -199,20 +200,38 @@ app.post("/api/payment/create", async (c) => {
       return c.json({ success: false, error: "Merchant not found" }, 404);
     }
 
-    // Create payment link
-    const payment_link = `https://your-domain.com/payment/${order_id}`;
-    
     // Generate QR code data (UPI QR format)
     const merchantName = String(merchant.merchant_name);
     const qr_data = `upi://pay?pa=${merchant.upi_id}&pn=${encodeURIComponent(merchantName)}&am=${amount}&cu=INR&tn=${order_id}`;
 
-    // Insert payment order
+    // Simulate Paytm API response (replace with actual Paytm API call)
+    const paytmResponse = {
+      success: true,
+      orderId: Math.random().toString(36).substr(2, 32),
+      amount: amount.toString(),
+      paymentUrl: "https://securegw.paytm.in/theia/processTransaction",
+      parameters: {
+        MID: "ZIrAGA72236364605077",
+        ORDER_ID: order_id,
+        CUST_ID: `CUST_${Date.now()}`,
+        EMAIL: "customer@example.com",
+        INDUSTRY_TYPE_ID: "Retail",
+        CHANNEL_ID: "WEB",
+        TXN_AMOUNT: amount.toString(),
+        WEBSITE: "DEFAULT",
+        CALLBACK_URL: "https://your-domain.com/payment/payTMCheckout"
+      },
+      message: "Payment initiated. Submit the form to Paytm gateway.",
+      note: "Checksum generation needs to be implemented in production"
+    };
+
+    // Insert payment order with Paytm response data
     const result = await c.env.DB
       .prepare(`
         INSERT INTO payment_orders (order_id, merchant_id, amount, status, payment_link, qr_code_data)
         VALUES (?, ?, ?, 'PENDING', ?, ?)
       `)
-      .bind(order_id, merchant_id, amount, payment_link, qr_data)
+      .bind(order_id, merchant_id, amount, JSON.stringify(paytmResponse), qr_data)
       .run();
 
     const insertedId = result.meta?.last_row_id;
@@ -222,34 +241,75 @@ app.post("/api/payment/create", async (c) => {
       .bind(insertedId)
       .first() as PaymentOrder;
 
-    return c.json({ success: true, data: order });
+    // Return only the order ID and payment ID to frontend
+    return c.json({ 
+      success: true, 
+      data: {
+        order_id: order_id,
+        payment_id: payment_id,
+        paytm_response: paytmResponse
+      }
+    });
   } catch (error) {
     return c.json({ success: false, error: "Failed to create payment order" }, 500);
   }
 });
 
-// Get payment order details
-app.get("/api/payment/:order_id", async (c) => {
-  const order_id = c.req.param("order_id");
+// Get payment order details by payment_id
+app.get("/api/payment/:payment_id", async (c) => {
+  const payment_id = c.req.param("payment_id");
 
   try {
-    const order = await c.env.DB
-      .prepare(`
-        SELECT po.*, m.merchant_name, m.upi_id, m.mobile_no
-        FROM payment_orders po
-        JOIN merchants m ON po.merchant_id = m.id
-        WHERE po.order_id = ?
-      `)
-      .bind(order_id)
-      .first();
+    // First find the order by searching in the payment_link JSON
+    const orders = await c.env.DB
+      .prepare("SELECT * FROM payment_orders")
+      .all();
 
-    if (!order) {
-      return c.json({ success: false, error: "Order not found" }, 404);
+    let order = null;
+    for (const row of orders.results) {
+      if (row.payment_link) {
+        try {
+          const paytmData = JSON.parse(row.payment_link as string);
+          // Check if this order contains our payment_id
+          if (paytmData.orderId === payment_id || (row.order_id as string).includes(payment_id)) {
+            order = row;
+            break;
+          }
+        } catch (e) {
+          // Skip invalid JSON
+          continue;
+        }
+      }
     }
 
-    return c.json({ success: true, data: order });
+    if (!order) {
+      // Try to find by order_id if payment_id not found
+      order = await c.env.DB
+        .prepare("SELECT * FROM payment_orders WHERE order_id = ?")
+        .bind(payment_id)
+        .first();
+    }
+
+    if (!order) {
+      return c.json({ success: false, error: "Payment not found" }, 404);
+    }
+
+    // Get merchant details
+    const merchant = await c.env.DB
+      .prepare("SELECT * FROM merchants WHERE id = ?")
+      .bind(order.merchant_id)
+      .first();
+
+    const result = {
+      ...order,
+      merchant_name: merchant?.merchant_name,
+      upi_id: merchant?.upi_id,
+      mobile_no: merchant?.mobile_no
+    };
+
+    return c.json({ success: true, data: result });
   } catch (error) {
-    return c.json({ success: false, error: "Failed to fetch order" }, 500);
+    return c.json({ success: false, error: "Failed to fetch payment" }, 500);
   }
 });
 
