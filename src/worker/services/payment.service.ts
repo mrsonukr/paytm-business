@@ -57,7 +57,7 @@ export class PaymentService {
       const order_id = this.generateOrderId();
       const payment_id = this.generatePaymentId();
       const merchantName = String(merchant.merchant_name);
-      const qr_data = this.generateQRData(merchant.upi_id || '', merchantName, amount, order_id);
+      const qr_data = this.generateQRData((merchant.upi_id || '') as string, merchantName, amount, order_id);
       const paytmResponse = this.generatePaytmResponse(order_id, amount);
 
       // Insert payment order with Paytm response data
