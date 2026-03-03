@@ -1,22 +1,13 @@
 import React, { useState, useEffect } from 'react';
-
-interface Merchant {
-  id: number;
-  merchant_name: string;
-  mobile_no: string;
-  upi_id: string;
-  merchant_key: string;
-  status: number;
-  created_at: string;
-  updated_at: string;
-}
+import { Merchant } from '../types';
 
 interface MerchantListProps {
   onEdit: (merchant: Merchant) => void;
   onAdd: () => void;
+  onCreatePayment: (merchant: Merchant) => void;
 }
 
-const MerchantList: React.FC<MerchantListProps> = ({ onEdit, onAdd }) => {
+const MerchantList: React.FC<MerchantListProps> = ({ onEdit, onAdd, onCreatePayment }) => {
   const [merchants, setMerchants] = useState<Merchant[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -64,69 +55,96 @@ const MerchantList: React.FC<MerchantListProps> = ({ onEdit, onAdd }) => {
     }
   };
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string | undefined) => {
+    if (!dateString) return '';
     return new Date(dateString).toLocaleString();
   };
 
   if (loading) {
-    return <div className="loading">Loading merchants...</div>;
+    return <div className="text-center py-8 text-gray-500">Loading merchants...</div>;
   }
 
   return (
-    <div className="merchant-list">
-      <div className="list-header">
-        <h2>Merchants</h2>
-        <button onClick={onAdd} className="btn-primary">
-          Add New Merchant
+    <div className="bg-white">
+      <div className="px-8 py-6 flex justify-between items-center">
+        <div>
+          <h2 className="text-xl font-light text-gray-900">Merchants</h2>
+          <p className="text-sm text-gray-500 mt-1">Manage your merchant accounts</p>
+        </div>
+        <button onClick={onAdd} className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
+          Add Merchant
         </button>
       </div>
 
-      {error && <div className="error-message">{error}</div>}
+      {error && (
+        <div className="mx-8 mt-4 bg-red-50 text-red-600 px-4 py-3 rounded-lg">
+          {error}
+        </div>
+      )}
 
       {merchants.length === 0 ? (
-        <div className="empty-state">
-          <p>No merchants found. Click "Add New Merchant" to get started.</p>
+        <div className="text-center py-16">
+          <div className="text-gray-400 mb-4">
+            <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
+          </div>
+          <p className="text-gray-500 text-lg font-light">No merchants found</p>
+          <p className="text-gray-400 mt-2">Click "Add Merchant" to get started</p>
         </div>
       ) : (
-        <div className="table-container">
-          <table className="merchants-table">
-            <thead>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
-                <th>ID</th>
-                <th>Merchant Name</th>
-                <th>Mobile Number</th>
-                <th>UPI ID</th>
-                <th>Merchant Key</th>
-                <th>Status</th>
-                <th>Created</th>
-                <th>Actions</th>
+                <th className="px-8 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                <th className="px-8 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Merchant Name</th>
+                <th className="px-8 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mobile</th>
+                <th className="px-8 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">UPI ID</th>
+                <th className="px-8 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Merchant Key</th>
+                <th className="px-8 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-8 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                <th className="px-8 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-gray-100">
               {merchants.map((merchant) => (
-                <tr key={merchant.id}>
-                  <td>{merchant.id}</td>
-                  <td>{merchant.merchant_name}</td>
-                  <td>{merchant.mobile_no}</td>
-                  <td>{merchant.upi_id}</td>
-                  <td>{merchant.merchant_key}</td>
-                  <td>
-                    <span className={`status-badge ${merchant.status ? 'active' : 'inactive'}`}>
-                      {merchant.status ? 'Active' : 'Inactive'}
-                    </span>
+                <tr key={merchant.id!} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-8 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">{merchant.id!}</td>
+                  <td className="px-8 py-4 whitespace-nowrap text-sm text-gray-900">{merchant.merchant_name}</td>
+                  <td className="px-8 py-4 whitespace-nowrap text-sm text-gray-600">{merchant.mobile_no}</td>
+                  <td className="px-8 py-4 whitespace-nowrap text-sm text-gray-600">{merchant.upi_id}</td>
+                  <td className="px-8 py-4 whitespace-nowrap text-sm text-gray-600 font-mono">{merchant.merchant_key || ''}</td>
+                  <td className="px-8 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      <div className={`w-2 h-2 rounded-full mr-2 ${
+                        merchant.status ? 'bg-green-500' : 'bg-red-500'
+                      }`} />
+                      <span className={`text-sm font-medium ${
+                        merchant.status ? 'text-green-700' : 'text-red-700'
+                      }`}>
+                        {merchant.status ? 'Active' : 'Inactive'}
+                      </span>
+                    </div>
                   </td>
-                  <td>{formatDate(merchant.created_at)}</td>
-                  <td>
-                    <div className="action-buttons">
+                  <td className="px-8 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(merchant.created_at)}</td>
+                  <td className="px-8 py-4 whitespace-nowrap text-sm">
+                    <div className="flex space-x-2">
                       <button
                         onClick={() => onEdit(merchant)}
-                        className="btn-edit"
+                        className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors font-medium"
                       >
                         Edit
                       </button>
                       <button
-                        onClick={() => handleDelete(merchant.id)}
-                        className="btn-delete"
+                        onClick={() => onCreatePayment(merchant)}
+                        className="px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors font-medium"
+                      >
+                        Payment
+                      </button>
+                      <button
+                        onClick={() => handleDelete(merchant.id!)}
+                        className="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors font-medium"
                       >
                         Delete
                       </button>

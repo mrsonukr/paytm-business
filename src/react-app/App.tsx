@@ -1,24 +1,17 @@
 import { useState } from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import MerchantList from "./components/MerchantList";
 import MerchantForm from "./components/MerchantForm";
-import "./App.css";
+import PaymentForm from "./components/PaymentForm";
+import PaymentPage from "./components/PaymentPage";
+import { Merchant } from "./types";
 
-interface Merchant {
-  id?: number;
-  merchant_name: string;
-  mobile_no: string;
-  upi_id: string;
-  merchant_key: string;
-  status: number;
-  created_at?: string;
-  updated_at?: string;
-}
-
-type View = 'list' | 'form' | null;
+type View = 'list' | 'form' | 'payment' | null;
 
 function App() {
   const [currentView, setCurrentView] = useState<View>('list');
   const [editingMerchant, setEditingMerchant] = useState<Merchant | null>(null);
+  const [paymentMerchant, setPaymentMerchant] = useState<Merchant | null>(null);
 
   const handleAddMerchant = () => {
     setEditingMerchant(null);
@@ -30,39 +23,77 @@ function App() {
     setCurrentView('form');
   };
 
+  const handleCreatePayment = (merchant: Merchant) => {
+    if (merchant.id) {
+      setPaymentMerchant(merchant);
+      setCurrentView('payment');
+    }
+  };
+
   const handleSaveMerchant = () => {
     setEditingMerchant(null);
     setCurrentView('list');
   };
 
+  const handleSavePayment = (payment: any) => {
+    // Redirect to payment page or show success
+    window.open(`/payment/${payment.order_id}`, '_blank');
+    setPaymentMerchant(null);
+    setCurrentView('list');
+  };
+
   const handleCancelForm = () => {
     setEditingMerchant(null);
+    setPaymentMerchant(null);
     setCurrentView('list');
   };
 
   return (
-    <div className="app">
-      <header className="app-header">
-        <h1>Paytm Business - Merchant Management</h1>
-      </header>
-      
-      <main className="app-main">
-        {currentView === 'list' && (
-          <MerchantList
-            onEdit={handleEditMerchant}
-            onAdd={handleAddMerchant}
-          />
-        )}
+    <Router>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+        <header className="bg-white">
+          <div className="max-w-7xl mx-auto px-4 py-6">
+            <h1 className="text-3xl font-light text-gray-900 tracking-tight">Paytm Business</h1>
+            <p className="text-gray-500 mt-1">Merchant Management System</p>
+          </div>
+        </header>
         
-        {currentView === 'form' && (
-          <MerchantForm
-            merchant={editingMerchant || undefined}
-            onSave={handleSaveMerchant}
-            onCancel={handleCancelForm}
-          />
-        )}
-      </main>
-    </div>
+        <main className="max-w-7xl mx-auto px-4 py-8">
+          <Routes>
+            <Route path="/" element={
+              currentView === 'list' ? (
+                <MerchantList
+                  onEdit={handleEditMerchant}
+                  onAdd={handleAddMerchant}
+                  onCreatePayment={handleCreatePayment}
+                />
+              ) : currentView === 'form' ? (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                  <div className="bg-white w-full max-w-2xl">
+                    <MerchantForm
+                      merchant={editingMerchant || undefined}
+                      onSave={handleSaveMerchant}
+                      onCancel={handleCancelForm}
+                    />
+                  </div>
+                </div>
+              ) : currentView === 'payment' && paymentMerchant ? (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                  <div className="bg-white w-full max-w-2xl">
+                    <PaymentForm
+                      merchant={paymentMerchant}
+                      onSave={handleSavePayment}
+                      onCancel={handleCancelForm}
+                    />
+                  </div>
+                </div>
+              ) : null
+            } />
+            <Route path="/payment/:order_id" element={<PaymentPage />} />
+          </Routes>
+        </main>
+      </div>
+    </Router>
   );
 }
 

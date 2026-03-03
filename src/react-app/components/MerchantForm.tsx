@@ -1,15 +1,6 @@
 import React, { useState } from 'react';
-
-interface Merchant {
-  id?: number;
-  merchant_name: string;
-  mobile_no: string;
-  upi_id: string;
-  merchant_key: string;
-  status: number;
-  created_at?: string;
-  updated_at?: string;
-}
+import ToggleSwitch from './ToggleSwitch';
+import { Merchant } from '../types';
 
 interface MerchantFormProps {
   merchant?: Merchant;
@@ -72,65 +63,112 @@ const MerchantForm: React.FC<MerchantFormProps> = ({ merchant, onSave, onCancel 
   };
 
   return (
-    <div className="merchant-form">
-      <h2>{merchant?.id ? 'Edit Merchant' : 'Add New Merchant'}</h2>
+    <div className="bg-white">
+      <div className="px-8 py-6 border-b border-gray-100">
+        <h2 className="text-2xl font-light text-gray-900">
+          {merchant?.id ? 'Edit Merchant' : 'Add New Merchant'}
+        </h2>
+      </div>
       
-      {error && <div className="error-message">{error}</div>}
+      {error && (
+        <div className="mx-8 mt-4 bg-red-50 text-red-600 px-4 py-3 rounded-lg">
+          {error}
+        </div>
+      )}
       
-      <form onSubmit={handleSubmit}>
-        <div className="form-group">
-          <label htmlFor="merchant_name">Merchant Name</label>
-          <input
-            type="text"
-            id="merchant_name"
-            name="merchant_name"
-            value={formData.merchant_name}
-            onChange={handleChange}
-            required
-          />
+      <form onSubmit={handleSubmit} className="p-8 space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label htmlFor="merchant_name" className="block text-sm font-medium text-gray-700 mb-2">
+              Merchant Name
+            </label>
+            <input
+              type="text"
+              id="merchant_name"
+              name="merchant_name"
+              value={formData.merchant_name}
+              onChange={handleChange}
+              required
+              className="w-full px-4 py-3 bg-gray-50 border-0 rounded-lg focus:ring-2 focus:ring-blue-500 focus:bg-white transition-colors"
+              placeholder="Enter merchant name"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="mobile_no" className="block text-sm font-medium text-gray-700 mb-2">
+              Mobile Number
+            </label>
+            <input
+              type="tel"
+              id="mobile_no"
+              name="mobile_no"
+              value={formData.mobile_no}
+              onChange={handleChange}
+              required
+              className="w-full px-4 py-3 bg-gray-50 border-0 rounded-lg focus:ring-2 focus:ring-blue-500 focus:bg-white transition-colors"
+              placeholder="Enter mobile number"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="upi_id" className="block text-sm font-medium text-gray-700 mb-2">
+              UPI ID
+            </label>
+            <input
+              type="text"
+              id="upi_id"
+              name="upi_id"
+              value={formData.upi_id}
+              onChange={handleChange}
+              required
+              className="w-full px-4 py-3 bg-gray-50 border-0 rounded-lg focus:ring-2 focus:ring-blue-500 focus:bg-white transition-colors"
+              placeholder="Enter UPI ID"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="merchant_key" className="block text-sm font-medium text-gray-700 mb-2">
+              Merchant Key
+            </label>
+            <input
+              type="text"
+              id="merchant_key"
+              name="merchant_key"
+              value={formData.merchant_key}
+              onChange={handleChange}
+              required
+              className="w-full px-4 py-3 bg-gray-50 border-0 rounded-lg focus:ring-2 focus:ring-blue-500 focus:bg-white transition-colors"
+              placeholder="Enter merchant key"
+            />
+          </div>
         </div>
 
-        <div className="form-group">
-          <label htmlFor="mobile_no">Mobile Number</label>
-          <input
-            type="tel"
-            id="mobile_no"
-            name="mobile_no"
-            value={formData.mobile_no}
-            onChange={handleChange}
-            required
-          />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <label className="text-sm font-medium text-gray-700">Status</label>
+            <ToggleSwitch
+              checked={formData.status === 1}
+              onChange={(checked) => setFormData(prev => ({ ...prev, status: checked ? 1 : 0 }))}
+            />
+            <span className="text-sm text-gray-500">
+              {formData.status === 1 ? 'Active' : 'Inactive'}
+            </span>
+          </div>
         </div>
 
-        <div className="form-group">
-          <label htmlFor="upi_id">UPI ID</label>
-          <input
-            type="text"
-            id="upi_id"
-            name="upi_id"
-            value={formData.upi_id}
-            onChange={handleChange}
-            required
-          />
-        </div>
-
-        <div className="form-group">
-          <label htmlFor="merchant_key">Merchant Key</label>
-          <input
-            type="text"
-            id="merchant_key"
-            name="merchant_key"
-            value={formData.merchant_key}
-            onChange={handleChange}
-            required
-          />
-        </div>
-
-        <div className="form-actions">
-          <button type="button" onClick={onCancel} className="btn-cancel">
+        <div className="flex justify-end space-x-3 pt-6">
+          <button 
+            type="button" 
+            onClick={onCancel} 
+            className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+          >
             Cancel
           </button>
-          <button type="submit" disabled={loading} className="btn-primary">
+          <button 
+            type="submit" 
+            disabled={loading} 
+            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 transition-colors font-medium"
+          >
             {loading ? 'Saving...' : (merchant?.id ? 'Update' : 'Save')}
           </button>
         </div>
